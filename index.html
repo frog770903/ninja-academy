@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>忍者學院</title>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;background:#111827;color:white}
+.app{max-width:430px;margin:auto;min-height:100vh;padding-bottom:85px}
+.header{background:linear-gradient(135deg,#dc2626,#7c2d12);padding:22px;border-radius:0 0 28px 28px}
+h1{margin:0;font-size:28px} h2{margin-top:0}
+.card{background:#1f2937;margin:16px;padding:16px;border-radius:20px}
+button{width:100%;padding:14px;margin-top:8px;border:0;border-radius:14px;background:#f97316;color:white;font-size:16px;font-weight:bold}
+input,select{width:100%;padding:13px;margin-top:8px;border-radius:12px;border:0;font-size:16px;box-sizing:border-box}
+.task,.item{background:#374151;padding:12px;border-radius:14px;margin-top:10px}
+.nav{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr);background:#030712;padding:8px}
+.nav button{background:none;font-size:13px;padding:8px 2px}
+.story{position:fixed;inset:0;background:radial-gradient(circle,#7c2d12,#111827);z-index:10;display:flex;align-items:center;justify-content:center;padding:20px}
+.storyBox{background:#1f2937;border-radius:24px;padding:24px;text-align:center}
+.big{font-size:64px}
+.hidden{display:none}
+.small{opacity:.8;font-size:14px}
+.badge{display:inline-block;background:#111827;padding:6px 10px;border-radius:99px;margin:3px}
+</style>
+</head>
+<body>
+
+<div id="story" class="story">
+  <div class="storyBox">
+    <div id="storyEmoji" class="big">🥷</div>
+    <h2 id="storyTitle">歡迎來到忍者學院</h2>
+    <p id="storyText">完成任務，累積積分，喚醒五位元素忍者。</p>
+    <button onclick="nextStory()">下一步</button>
+    <button onclick="closeStory()">開始冒險</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="header">
+    <h1>🥷 忍者學院</h1>
+    <p>完成任務，收集忍者、寵物與裝備</p>
+    <h2>⭐ 總積分：<span id="points">0</span></h2>
+  </div>
+
+  <div id="page"></div>
+
+  <div class="nav">
+    <button onclick="showTasks()">任務</button>
+    <button onclick="showNinjas()">忍者</button>
+    <button onclick="showShop()">裝備</button>
+    <button onclick="showPets()">寵物</button>
+    <button onclick="showSettings()">設定</button>
+  </div>
+</div>
+
+<script>
+let points = Number(localStorage.getItem("points")) || 0;
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [
+  {name:"閱讀20分鐘", type:"fire", point:20},
+  {name:"整理書包", type:"ice", point:15},
+  {name:"運動10分鐘", type:"wind", point:15},
+  {name:"說出自己的心情", type:"light", point:20},
+  {name:"勇敢去上學", type:"shadow", point:30}
+];
+
+let ninjas = JSON.parse(localStorage.getItem("ninjas")) || {
+  fire:0, ice:0, wind:0, light:0, shadow:0
+};
+
+let ownedGear = JSON.parse(localStorage.getItem("ownedGear")) || [];
+let ownedPets = JSON.parse(localStorage.getItem("ownedPets")) || [];
+let ownedPetGear = JSON.parse(localStorage.getItem("ownedPetGear")) || [];
+
+const ninjaNames = {
+  fire:"🔥 烈焰忍者｜學習",
+  ice:"❄️ 冰霜忍者｜生活",
+  wind:"🌪️ 風暴忍者｜運動",
+  light:"✨ 光明忍者｜品格",
+  shadow:"🌙 暗影忍者｜勇氣"
+};
+
+const gear = [
+  {id:"fire_mask", name:"🔥 火焰面罩", price:80},
+  {id:"fire_cloth", name:"🥋 烈焰戰衣", price:120},
+  {id:"fire_sword", name:"🗡️ 烈焰長刀", price:160},
+  {id:"ice_armor", name:"🛡️ 冰霜護甲", price:140},
+  {id:"ice_sword", name:"❄️ 冰晶長刀", price:100},
+  {id:"wind_boots", name:"👟 疾風鞋", price:90},
+  {id:"wind_cape", name:"🌪️ 風暴披風", price:150},
+  {id:"light_badge", name:"🏅 光明徽章", price:70},
+  {id:"light_robe", name:"✨ 光明忍者服", price:130},
+  {id:"shadow_hood", name:"🥷 暗影頭巾", price:110},
+  {id:"shadow_blade", name:"🌙 暗影雙刀", price:180}
+];
+
+const pets = [
+  {id:"monkey", name:"🐵 靈巧猴", price:150},
+  {id:"panda", name:"🐼 功夫熊貓", price:250},
+  {id:"penguin", name:"🐧 冰雪企鵝", price:350},
+  {id:"bear", name:"🐻 森林熊", price:500},
+  {id:"dragon", name:"🐉 火龍", price:900}
+];
+
+const petGear = [
+  {id:"hat", name:"🎩 忍者小帽", price:80},
+  {id:"armor", name:"🛡️ 寵物護甲", price:160},
+  {id:"bag", name:"🎒 冒險背包", price:120},
+  {id:"scarf", name:"🧣 元素圍巾", price:140},
+  {id:"crown", name:"👑 龍王皇冠", price:300}
+];
+
+function save(){
+  localStorage.setItem("points", points);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem("ninjas", JSON.stringify(ninjas));
+  localStorage.setItem("ownedGear", JSON.stringify(ownedGear));
+  localStorage.setItem("ownedPets", JSON.stringify(ownedPets));
+  localStorage.setItem("ownedPetGear", JSON.stringify(ownedPetGear));
+  document.getElementById("points").innerText = points;
+}
+
+function showTasks(){
+  let html = `<div class="card"><h2>今日任務</h2>`;
+  tasks.forEach((t,i)=>{
+    html += `<div class="task">
+      <b>${t.name}</b>
+      <div class="small">${ninjaNames[t.type]}｜+${t.point}分</div>
+      <button onclick="completeTask(${i})">完成任務</button>
+      <button onclick="deleteTask(${i})">刪除任務</button>
+    </div>`;
+  });
+  html += `</div>
+  <div class="card">
+    <h2>新增任務</h2>
+    <input id="taskName" placeholder="任務名稱，例如：完成國語作業">
+    <select id="taskType">
+      <option value="fire">🔥 學習｜烈焰忍者</option>
+      <option value="ice">❄️ 生活｜冰霜忍者</option>
+      <option value="wind">🌪️ 運動｜風暴忍者</option>
+      <option value="light">✨ 品格｜光明忍者</option>
+      <option value="shadow">🌙 勇氣｜暗影忍者</option>
+    </select>
+    <input id="taskPoint" type="number" value="20">
+    <button onclick="addTask()">新增任務</button>
+  </div>`;
+  document.getElementById("page").innerHTML = html;
+}
+
+function addTask(){
+  let name = document.getElementById("taskName").value.trim();
+  let type = document.getElementById("taskType").value;
+  let point = Number(document.getElementById("taskPoint").value);
+  if(!name){alert("請輸入任務名稱");return;}
+  tasks.push({name,type,point});
+  save(); showTasks();
+}
+
+function completeTask(i){
+  let t = tasks[i];
+  points += t.point;
+  ninjas[t.type] += t.point;
+  save();
+  alert("任務完成！得到 " + t.point + " 分");
+  showTasks();
+}
+
+function deleteTask(i){
+  tasks.splice(i,1);
+  save(); showTasks();
+}
+
+function showNinjas(){
+  let html = `<div class="card"><h2>元素忍者</h2>`;
+  for(let key in ninjas){
+    let exp = ninjas[key];
+    let level = Math.floor(exp/100)+1;
+    html += `<div class="item">
+      <h3>${ninjaNames[key]}</h3>
+      <p>等級：Lv.${level}</p>
+      <p>經驗值：${exp}</p>
+      <p>距離下次升級：${100-(exp%100)} 分</p>
+    </div>`;
+  }
+  html += `</div>`;
+  document.getElementById("page").innerHTML = html;
+}
+
+function showShop(){
+  let html = `<div class="card"><h2>忍者裝備商店</h2>`;
+  gear.forEach(g=>{
+    html += `<div class="item">
+      <h3>${g.name}</h3>
+      <p>${g.price} 分</p>
+      ${ownedGear.includes(g.id) ? "<b>已擁有</b>" : `<button onclick="buyGear('${g.id}',${g.price})">兌換</button>`}
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById("page").innerHTML = html;
+}
+
+function buyGear(id,price){
+  if(points<price){alert("積分不足");return;}
+  points-=price;
+  ownedGear.push(id);
+  save(); showShop();
+}
+
+function showPets(){
+  let html = `<div class="card"><h2>寵物夥伴</h2>`;
+  pets.forEach(p=>{
+    html += `<div class="item">
+      <h3>${p.name}</h3>
+      <p>${p.price} 分</p>
+      ${ownedPets.includes(p.id) ? "<b>已加入隊伍</b>" : `<button onclick="buyPet('${p.id}',${p.price})">兌換寵物</button>`}
+    </div>`;
+  });
+
+  html += `</div><div class="card"><h2>寵物裝備</h2>`;
+  petGear.forEach(g=>{
+    html += `<div class="item">
+      <h3>${g.name}</h3>
+      <p>${g.price} 分</p>
+      ${ownedPetGear.includes(g.id) ? "<b>已擁有</b>" : `<button onclick="buyPetGear('${g.id}',${g.price})">兌換裝備</button>`}
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById("page").innerHTML = html;
+}
+
+function buyPet(id,price){
+  if(points<price){alert("積分不足");return;}
+  points-=price;
+  ownedPets.push(id);
+  save(); showPets();
+}
+
+function buyPetGear(id,price){
+  if(points<price){alert("積分不足");return;}
+  points-=price;
+  ownedPetGear.push(id);
+  save(); showPets();
+}
+
+function showSettings(){
+  document.getElementById("page").innerHTML = `
+  <div class="card">
+    <h2>設定</h2>
+    <button onclick="alert('按鈕可以操作！')">測試按鈕</button>
+    <button onclick="showStory()">重看開場動畫</button>
+    <button onclick="resetAll()">清除所有資料</button>
+  </div>`;
+}
+
+function resetAll(){
+  if(confirm("確定要清除所有資料嗎？")){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+let storyIndex=0;
+const story=[
+  ["🥷","歡迎來到忍者學院","完成任務，累積積分，喚醒五位元素忍者。"],
+  ["⭐","累積積分","每完成一項任務，就能得到積分，也能讓忍者成長。"],
+  ["🎒","收集裝備","用積分兌換忍者服、面罩、武器和配件。"],
+  ["🐵","尋找寵物","猴子、熊貓、企鵝、熊和火龍會成為你的夥伴。"],
+  ["🏯","開始冒險","打造你的忍者戰隊，開啟冒險旅程！"]
+];
+
+function nextStory(){
+  storyIndex++;
+  if(storyIndex>=story.length){closeStory();return;}
+  document.getElementById("storyEmoji").innerText=story[storyIndex][0];
+  document.getElementById("storyTitle").innerText=story[storyIndex][1];
+  document.getElementById("storyText").innerText=story[storyIndex][2];
+}
+
+function closeStory(){
+  document.getElementById("story").classList.add("hidden");
+  localStorage.setItem("storySeen","yes");
+}
+
+function showStory(){
+  storyIndex=0;
+  document.getElementById("storyEmoji").innerText=story[0][0];
+  document.getElementById("storyTitle").innerText=story[0][1];
+  document.getElementById("storyText").innerText=story[0][2];
+  document.getElementById("story").classList.remove("hidden");
+}
+
+save();
+showTasks();
+
+if(localStorage.getItem("storySeen")==="yes"){
+  document.getElementById("story").classList.add("hidden");
+}
+</script>
+
+</body>
+</html>
+
